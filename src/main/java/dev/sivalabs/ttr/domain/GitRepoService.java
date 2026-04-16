@@ -1,5 +1,7 @@
 package dev.sivalabs.ttr.domain;
 
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -40,7 +42,14 @@ public class GitRepoService {
             throw new RuntimeException("Failed to create directory: " + localPath.getParent(), e);
         }
 
-        runGitClone(repoUrl, localPath);
+        try (Git _ = Git.cloneRepository()
+                .setURI(repoUrl)
+                .setDirectory(localPath.toFile())
+                .call()) {
+            log.info("Cloned {} to {}", repoUrl, localPath);
+        } catch (GitAPIException e) {
+            throw new RuntimeException("Failed to clone repository: " + e.getMessage(), e);
+        }
 
         GitRepo repo = new GitRepo();
         repo.setRepoUrl(repoUrl);
@@ -64,37 +73,13 @@ public class GitRepoService {
     public void pullRepo(Long id) {
         GitRepo repo = findById(id);
         Path localPath = Path.of(repo.getLocalPath());
-        try {
-            ProcessBuilder pb = new ProcessBuilder("git", "pull");
-            pb.directory(localPath.toFile());
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            String output = new String(process.getInputStream().readAllBytes());
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException("git pull failed (exit " + exitCode + "): " + output);
-            }
+        try (Git git = Git.open(localPath.toFile())) {
+            git.pull().call();
             log.info("Pulled latest changes for repo {} at {}", repo.getRepoName(), localPath);
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Failed to run git pull: " + e.getMessage(), e);
-        }
-    }
-
-    private void runGitClone(String repoUrl, Path localPath) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("git", "clone", repoUrl, localPath.toString());
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            String output = new String(process.getInputStream().readAllBytes());
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new RuntimeException("git clone failed (exit " + exitCode + "): " + output);
-            }
-            log.info("Cloned {} to {}", repoUrl, localPath);
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Failed to run git clone: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to open repository at " + localPath + ": " + e.getMessage(), e);
+        } catch (GitAPIException e) {
+            throw new RuntimeException("Failed to pull repository: " + e.getMessage(), e);
         }
     }
 
