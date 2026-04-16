@@ -83,6 +83,7 @@
             </div>
         </div>
 
+        <!-- README Section -->
         <details th:if="${repo.generatedReadme != null}" class="mt-6 bg-white shadow rounded-lg group" open>
             <summary class="px-6 py-4 cursor-pointer list-none flex items-center gap-2 select-none">
                 <i class="fas fa-file-alt text-emerald-500"></i>
@@ -94,16 +95,155 @@
                 <div id="readme-content" class="prose prose-slate max-w-none pt-4"></div>
             </div>
         </details>
+
+        <!-- Chat Section -->
+        <div th:if="${repo.ingestedAt != null}" class="mt-6 bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+                <i class="fas fa-comments text-indigo-500"></i>
+                <span class="font-semibold text-gray-700">Ask about this Repository</span>
+            </div>
+            <div id="chat-messages" class="px-6 py-4 h-96 overflow-y-auto flex flex-col gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <i class="fas fa-robot text-indigo-500 text-sm"></i>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg px-4 py-3 max-w-[85%]">
+                        <p class="text-sm text-gray-800">Hi! I can answer questions about the
+                            <strong th:text="${repo.repoName}">repo</strong> codebase based on the indexed content.
+                            Ask me anything about the code, architecture, classes, or how things work.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100">
+                <div class="flex gap-2 items-end">
+                    <textarea id="chat-input" rows="2"
+                              placeholder="Ask a question about this repository..."
+                              class="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                    <button id="chat-send" onclick="sendMessage()"
+                            class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-paper-plane mr-2"></i> Send
+                    </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">Answers are based solely on indexed repository content &mdash; no hallucinations. Press Enter to send, Shift+Enter for a new line.</p>
+            </div>
+        </div>
     </div>
 </div>
 <th:block layout:fragment="page-scripts">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
+    <script th:inline="javascript">
+        // README rendering
         document.addEventListener('DOMContentLoaded', function () {
             const raw = document.getElementById('raw-readme');
             const target = document.getElementById('readme-content');
             if (raw && target) {
                 target.innerHTML = marked.parse(raw.textContent);
+            }
+        });
+
+        // Chat
+        const repoId = /*[[${repo.id}]]*/ null;
+        let chatLocked = false;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            return div.innerHTML;
+        }
+
+        function appendUserBubble(text) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-end';
+            div.innerHTML =
+                '<div class="bg-indigo-600 text-white rounded-lg px-4 py-3 max-w-[85%]">' +
+                '<p class="text-sm whitespace-pre-wrap">' + escapeHtml(text) + '</p>' +
+                '</div>';
+            document.getElementById('chat-messages').appendChild(div);
+        }
+
+        function appendAiBubble(text) {
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-3';
+            div.innerHTML =
+                '<div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">' +
+                '<i class="fas fa-robot text-indigo-500 text-sm"></i>' +
+                '</div>' +
+                '<div class="bg-gray-100 rounded-lg px-4 py-3 max-w-[85%]">' +
+                '<div class="text-sm text-gray-800 prose prose-sm max-w-none">' + marked.parse(text) + '</div>' +
+                '</div>';
+            document.getElementById('chat-messages').appendChild(div);
+        }
+
+        function appendLoadingBubble() {
+            const div = document.createElement('div');
+            div.id = 'chat-loading';
+            div.className = 'flex items-start gap-3';
+            div.innerHTML =
+                '<div class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">' +
+                '<i class="fas fa-robot text-indigo-500 text-sm"></i>' +
+                '</div>' +
+                '<div class="bg-gray-100 rounded-lg px-4 py-3">' +
+                '<div class="flex gap-1 items-center">' +
+                '<div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></div>' +
+                '<div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></div>' +
+                '<div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></div>' +
+                '</div>' +
+                '</div>';
+            document.getElementById('chat-messages').appendChild(div);
+        }
+
+        function scrollToBottom() {
+            const messages = document.getElementById('chat-messages');
+            if (messages) messages.scrollTop = messages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            if (chatLocked) return;
+
+            const input = document.getElementById('chat-input');
+            const sendBtn = document.getElementById('chat-send');
+            const question = input.value.trim();
+            if (!question) return;
+
+            input.value = '';
+            chatLocked = true;
+            sendBtn.disabled = true;
+            input.disabled = true;
+
+            appendUserBubble(question);
+            appendLoadingBubble();
+            scrollToBottom();
+
+            try {
+                const resp = await fetch('/repos/' + repoId + '/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({question: question})
+                });
+                const data = await resp.json();
+                document.getElementById('chat-loading').remove();
+                appendAiBubble(data.answer);
+            } catch (_) {
+                document.getElementById('chat-loading').remove();
+                appendAiBubble('Sorry, something went wrong. Please try again.');
+            } finally {
+                chatLocked = false;
+                sendBtn.disabled = false;
+                input.disabled = false;
+                scrollToBottom();
+                input.focus();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
             }
         });
     </script>
