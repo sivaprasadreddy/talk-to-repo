@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>README</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="max-w-4xl mx-auto">
+
+        <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+            <h2 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-file-alt text-emerald-500 mr-2"></i>
+                <span th:text="${repo.repoName}">Repository Name</span>
+            </h2>
+            <div class="flex items-center gap-2">
+                <form th:action="@{/repos/{id}/generate-readme(id=${repo.id})}" method="post" class="inline">
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500">
+                        <i class="fas fa-sync mr-2"></i> Regenerate
+                    </button>
+                </form>
+                <a th:href="@{/explore-repo/{id}(id=${repo.id})}"
+                   class="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-200 border border-gray-300">
+                    <i class="fas fa-arrow-left mr-2"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <!-- README content -->
+        <div th:if="${repo.generatedReadme != null}" class="bg-white shadow rounded-lg p-8">
+            <div id="raw-readme" class="hidden" th:text="${repo.generatedReadme}"></div>
+            <div id="readme-content" class="prose prose-slate max-w-none"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div th:if="${repo.generatedReadme == null}"
+             class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-white py-16 text-center">
+            <i class="fas fa-file-alt text-4xl text-gray-300 mb-4"></i>
+            <p class="text-lg font-medium text-gray-500">No README generated yet</p>
+            <p class="mt-1 text-sm text-gray-400">Click Regenerate to create one.</p>
+        </div>
+
+        <p th:if="${repo.ingestedAt != null}" class="mt-4 text-xs text-gray-400 text-right">
+            <i class="fas fa-database mr-1"></i>
+            Indexed: <span th:text="${#temporals.format(repo.ingestedAt, 'dd MMM yyyy, HH:mm')}"></span>
+        </p>
+    </div>
+
+
+</div>
+<th:block layout:fragment="page-scripts">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const raw = document.getElementById('raw-readme');
+            const target = document.getElementById('readme-content');
+            if (raw && target) {
+                target.innerHTML = marked.parse(raw.textContent);
+            }
+        });
+    </script>
+</th:block>
+</body>
+</html>

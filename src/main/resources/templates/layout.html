@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"/>
     <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+    <!-- Page-specific head content -->
+    <th:block layout:fragment="page-head"></th:block>
     <script>
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
@@ -103,6 +105,7 @@
         </div>
     </div>
 </div>
-
+<!-- Page-specific scripts -->
+<th:block layout:fragment="page-scripts"></th:block>
 </body>
 </html>

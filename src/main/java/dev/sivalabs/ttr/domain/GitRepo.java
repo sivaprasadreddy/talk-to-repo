@@ -23,6 +23,12 @@ public class GitRepo {
     @Column(nullable = false)
     private LocalDateTime clonedAt;
 
+    @Column
+    private LocalDateTime ingestedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String generatedReadme;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -37,4 +43,10 @@ public class GitRepo {
 
     public LocalDateTime getClonedAt() { return clonedAt; }
     public void setClonedAt(LocalDateTime clonedAt) { this.clonedAt = clonedAt; }
+
+    public LocalDateTime getIngestedAt() { return ingestedAt; }
+    public void setIngestedAt(LocalDateTime ingestedAt) { this.ingestedAt = ingestedAt; }
+
+    public String getGeneratedReadme() { return generatedReadme; }
+    public void setGeneratedReadme(String generatedReadme) { this.generatedReadme = generatedReadme; }
 }
