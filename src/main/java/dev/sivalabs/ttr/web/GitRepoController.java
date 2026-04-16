@@ -67,6 +67,31 @@ public class GitRepoController {
         return "explore-repo";
     }
 
+    @PostMapping("/repos/{id}/pull")
+    public String pullRepo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            gitRepoService.pullRepo(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Repository refreshed successfully!");
+        } catch (Exception e) {
+            log.error("Failed to pull repo {}", id, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to refresh repository: " + e.getMessage());
+        }
+        return "redirect:/explore-repo/" + id;
+    }
+
+    @PostMapping("/repos/{id}/reingest")
+    public String reingestRepo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            GitRepo repo = gitRepoService.findById(id);
+            repoIngestionService.reingest(repo);
+            redirectAttributes.addFlashAttribute("successMessage", "Repository re-ingested successfully!");
+        } catch (Exception e) {
+            log.error("Failed to re-ingest repo {}", id, e);
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to re-ingest repository: " + e.getMessage());
+        }
+        return "redirect:/explore-repo/" + id;
+    }
+
     @PostMapping("/repos/{id}/generate-readme")
     public String generateReadme(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
@@ -78,13 +103,6 @@ public class GitRepoController {
             log.error("Failed to generate README for repo {}", id, e);
             redirectAttributes.addFlashAttribute("errorMessage", "Failed to generate README: " + e.getMessage());
         }
-        return "redirect:/repos/" + id + "/readme";
-    }
-
-    @GetMapping("/repos/{id}/readme")
-    public String showReadme(@PathVariable Long id, Model model) {
-        GitRepo repo = gitRepoService.findById(id);
-        model.addAttribute("repo", repo);
-        return "readme";
+        return "redirect:/explore-repo/" + id;
     }
 }

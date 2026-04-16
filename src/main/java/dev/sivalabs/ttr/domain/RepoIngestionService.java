@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +31,12 @@ public class RepoIngestionService {
 
     private final VectorStore vectorStore;
     private final GitRepoRepository gitRepoRepository;
+    private final JdbcTemplate jdbcTemplate;
 
-    public RepoIngestionService(VectorStore vectorStore, GitRepoRepository gitRepoRepository) {
+    public RepoIngestionService(VectorStore vectorStore, GitRepoRepository gitRepoRepository, JdbcTemplate jdbcTemplate) {
         this.vectorStore = vectorStore;
         this.gitRepoRepository = gitRepoRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional
@@ -42,6 +45,16 @@ public class RepoIngestionService {
             log.info("Repo {} already ingested at {}, skipping", repo.getRepoName(), repo.getIngestedAt());
             return;
         }
+        ingest(repo);
+    }
+
+    @Transactional
+    public void reingest(GitRepo repo) {
+        int deleted = jdbcTemplate.update(
+                "DELETE FROM vector_store WHERE metadata->>'repoId' = ?",
+                repo.getId().toString());
+        log.info("Deleted {} existing embeddings for repo {}", deleted, repo.getRepoName());
+        repo.setIngestedAt(null);
         ingest(repo);
     }
 

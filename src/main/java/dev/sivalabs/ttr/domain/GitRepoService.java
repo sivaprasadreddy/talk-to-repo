@@ -61,6 +61,26 @@ public class GitRepoService {
                 .orElseThrow(() -> new IllegalArgumentException("Repository not found: " + id));
     }
 
+    public void pullRepo(Long id) {
+        GitRepo repo = findById(id);
+        Path localPath = Path.of(repo.getLocalPath());
+        try {
+            ProcessBuilder pb = new ProcessBuilder("git", "pull");
+            pb.directory(localPath.toFile());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String output = new String(process.getInputStream().readAllBytes());
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("git pull failed (exit " + exitCode + "): " + output);
+            }
+            log.info("Pulled latest changes for repo {} at {}", repo.getRepoName(), localPath);
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to run git pull: " + e.getMessage(), e);
+        }
+    }
+
     private void runGitClone(String repoUrl, Path localPath) {
         try {
             ProcessBuilder pb = new ProcessBuilder("git", "clone", repoUrl, localPath.toString());
