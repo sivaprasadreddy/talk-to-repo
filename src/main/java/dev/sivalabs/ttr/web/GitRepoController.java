@@ -32,6 +32,7 @@ public class GitRepoController {
 
     @GetMapping({"/", "/repos"})
     public String listRepos(Model model) {
+        log.debug("Listing all repositories");
         model.addAttribute("repos", gitRepoService.findAll());
         return "repos";
     }
@@ -50,11 +51,14 @@ public class GitRepoController {
         if (bindingResult.hasErrors()) {
             return "add-repo";
         }
+        log.info("Adding repository: {}", addRepoForm.getRepoUrl());
         try {
             GitRepo repo = gitRepoService.cloneRepo(addRepoForm.getRepoUrl());
+            log.info("Repository added successfully: {} (id={})", repo.getRepoName(), repo.getId());
             redirectAttributes.addFlashAttribute("successMessage", "Repository cloned successfully!");
             return "redirect:/explore-repo/" + repo.getId();
         } catch (Exception e) {
+            log.error("Failed to add repository {}", addRepoForm.getRepoUrl(), e);
             model.addAttribute("errorMessage", e.getMessage());
             return "add-repo";
         }
@@ -62,6 +66,7 @@ public class GitRepoController {
 
     @GetMapping("/explore-repo/{id}")
     public String exploreRepo(@PathVariable Long id, Model model) {
+        log.debug("Exploring repo id={}", id);
         GitRepo repo = gitRepoService.findById(id);
         model.addAttribute("repo", repo);
         return "explore-repo";
@@ -69,8 +74,10 @@ public class GitRepoController {
 
     @PostMapping("/repos/{id}/pull")
     public String pullRepo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        log.info("Pull requested for repo id={}", id);
         try {
             gitRepoService.pullRepo(id);
+            log.info("Pull completed for repo id={}", id);
             redirectAttributes.addFlashAttribute("successMessage", "Repository refreshed successfully!");
         } catch (Exception e) {
             log.error("Failed to pull repo {}", id, e);
@@ -81,9 +88,11 @@ public class GitRepoController {
 
     @PostMapping("/repos/{id}/reingest")
     public String reingestRepo(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        log.info("Re-ingest requested for repo id={}", id);
         try {
             GitRepo repo = gitRepoService.findById(id);
             repoIngestionService.reingest(repo);
+            log.info("Re-ingest completed for repo id={}", id);
             redirectAttributes.addFlashAttribute("successMessage", "Repository re-ingested successfully!");
         } catch (Exception e) {
             log.error("Failed to re-ingest repo {}", id, e);
@@ -94,10 +103,12 @@ public class GitRepoController {
 
     @PostMapping("/repos/{id}/generate-readme")
     public String generateReadme(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        log.info("README generation requested for repo id={}", id);
         try {
             GitRepo repo = gitRepoService.findById(id);
             repoIngestionService.ingestIfNeeded(repo);
             readmeGenerationService.generateReadme(repo);
+            log.info("README generation completed for repo id={}", id);
             redirectAttributes.addFlashAttribute("successMessage", "README generated successfully!");
         } catch (Exception e) {
             log.error("Failed to generate README for repo {}", id, e);

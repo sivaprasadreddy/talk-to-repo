@@ -26,6 +26,7 @@ public class RepoChatService {
     }
 
     public String chat(GitRepo repo, String question) {
+        log.info("Chat request for repo {} (id={}): {}", repo.getRepoName(), repo.getId(), question);
         String filter = "repoId == " + repo.getId();
 
         List<Document> docs = vectorStore.similaritySearch(
@@ -37,14 +38,14 @@ public class RepoChatService {
         );
 
         if (docs.isEmpty()) {
+            log.warn("No relevant documents found for repo {} on question: {}", repo.getRepoName(), question);
             return "I could not find relevant information about that in this repository's indexed content.";
         }
 
+        log.debug("Found {} relevant documents for repo {}", docs.size(), repo.getRepoName());
         String context = docs.stream()
                 .map(Document::getText)
                 .collect(Collectors.joining("\n\n---\n\n"));
-
-        log.debug("Answering question for repo {}: {}", repo.getRepoName(), question);
 
         return chatClient.prompt()
                 .user(buildPrompt(repo.getRepoName(), question, context))

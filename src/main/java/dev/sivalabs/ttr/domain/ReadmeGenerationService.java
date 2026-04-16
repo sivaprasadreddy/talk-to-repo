@@ -32,18 +32,21 @@ public class ReadmeGenerationService {
 
     @Transactional
     public String generateReadme(GitRepo repo) {
+        log.info("Generating README for repo {} (id={})", repo.getRepoName(), repo.getId());
         String filter = "repoId == " + repo.getId();
 
+        log.debug("Searching overview context for repo {}", repo.getRepoName());
         String overviewCtx      = search("project overview purpose goals main functionality", filter);
+        log.debug("Searching tech stack context for repo {}", repo.getRepoName());
         String techStackCtx     = search("technology stack frameworks libraries dependencies build tools", filter);
+        log.debug("Searching architecture context for repo {}", repo.getRepoName());
         String architectureCtx  = search("architecture modules packages layers entry points configuration", filter);
-
-        log.info("Generating README for repo {}", repo.getRepoName());
         String readme = chatClient.prompt()
                 .user(buildPrompt(repo.getRepoName(), overviewCtx, techStackCtx, architectureCtx))
                 .call()
                 .content();
 
+        log.info("README generated for repo {} ({} chars)", repo.getRepoName(), readme != null ? readme.length() : 0);
         repo.setGeneratedReadme(readme);
         gitRepoRepository.save(repo);
         return readme;

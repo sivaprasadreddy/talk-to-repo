@@ -28,13 +28,16 @@ public class GitRepoService {
     }
 
     public GitRepo cloneRepo(String repoUrl) {
+        log.info("Cloning repository: {}", repoUrl);
         Optional<GitRepo> existing = gitRepoRepository.findByRepoUrl(repoUrl);
         if (existing.isPresent()) {
+            log.info("Repository {} already exists (id={}), skipping clone", repoUrl, existing.get().getId());
             return existing.get();
         }
 
         String repoName = extractRepoName(repoUrl);
         Path localPath = Path.of(System.getProperty("user.home"), "ttr", repoName);
+        log.debug("Target local path: {}", localPath);
 
         try {
             Files.createDirectories(localPath.getParent());
@@ -56,7 +59,9 @@ public class GitRepoService {
         repo.setRepoName(repoName);
         repo.setLocalPath(localPath.toString());
         repo.setClonedAt(LocalDateTime.now());
-        return gitRepoRepository.save(repo);
+        GitRepo saved = gitRepoRepository.save(repo);
+        log.info("Saved repo {} with id={}", repoName, saved.getId());
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -73,9 +78,10 @@ public class GitRepoService {
     public void pullRepo(Long id) {
         GitRepo repo = findById(id);
         Path localPath = Path.of(repo.getLocalPath());
+        log.info("Pulling latest changes for repo {} from {}", repo.getRepoName(), localPath);
         try (Git git = Git.open(localPath.toFile())) {
             git.pull().call();
-            log.info("Pulled latest changes for repo {} at {}", repo.getRepoName(), localPath);
+            log.info("Pull complete for repo {}", repo.getRepoName());
         } catch (IOException e) {
             throw new RuntimeException("Failed to open repository at " + localPath + ": " + e.getMessage(), e);
         } catch (GitAPIException e) {

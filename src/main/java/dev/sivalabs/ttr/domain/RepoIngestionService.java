@@ -50,6 +50,7 @@ public class RepoIngestionService {
 
     @Transactional
     public void reingest(GitRepo repo) {
+        log.info("Re-ingesting repo {} (id={})", repo.getRepoName(), repo.getId());
         int deleted = jdbcTemplate.update(
                 "DELETE FROM vector_store WHERE metadata->>'repoId' = ?",
                 repo.getId().toString());
@@ -60,16 +61,21 @@ public class RepoIngestionService {
 
     @Transactional
     public void ingest(GitRepo repo) {
+        log.info("Starting ingestion for repo {} at {}", repo.getRepoName(), repo.getLocalPath());
         List<Document> documents = collectDocuments(repo);
+        log.info("Collected {} files for repo {}", documents.size(), repo.getRepoName());
         if (documents.isEmpty()) {
             log.warn("No source files found for repo {}", repo.getRepoName());
         } else {
+            log.info("Splitting {} files into chunks for repo {}", documents.size(), repo.getRepoName());
             List<Document> chunks = TokenTextSplitter.builder().build().apply(documents);
+            log.info("Adding {} chunks to vector store for repo {}", chunks.size(), repo.getRepoName());
             vectorStore.add(chunks);
             log.info("Ingested {} chunks from {} files for repo {}", chunks.size(), documents.size(), repo.getRepoName());
         }
         repo.setIngestedAt(LocalDateTime.now());
         gitRepoRepository.save(repo);
+        log.info("Ingestion complete for repo {}", repo.getRepoName());
     }
 
     private List<Document> collectDocuments(GitRepo repo) {
@@ -95,6 +101,7 @@ public class RepoIngestionService {
                     }
                     String content = Files.readString(file);
                     String relativePath = repoRoot.relativize(file).toString();
+                    log.debug("Collected file: {}", relativePath);
                     Map<String, Object> metadata = new HashMap<>();
                     metadata.put("repoId", repo.getId());
                     metadata.put("filePath", relativePath);
