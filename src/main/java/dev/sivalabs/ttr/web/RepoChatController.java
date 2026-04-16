@@ -23,19 +23,19 @@ public class RepoChatController {
 
     @PostMapping("/repos/{id}/chat")
     public ResponseEntity<ChatResponse> chat(@PathVariable Long id, @RequestBody ChatRequest request) {
-        log.info("Chat request for repo id={}: {}", id, request.question());
+        log.info("Chat request for repo id={} [conv={}]: {}", id, request.conversationId(), request.question());
         GitRepo repo = gitRepoService.findById(id);
         if (repo.getIngestedAt() == null) {
             log.warn("Chat attempted on non-ingested repo id={}", id);
             return ResponseEntity.badRequest()
                     .body(new ChatResponse("Repository has not been ingested yet. Please click 'Ingest' first."));
         }
-        String answer = repoChatService.chat(repo, request.question());
+        String answer = repoChatService.chat(repo, request.question(), request.conversationId());
         log.debug("Chat response for repo id={} ({} chars)", id, answer != null ? answer.length() : 0);
         return ResponseEntity.ok(new ChatResponse(answer));
     }
 
-    public record ChatRequest(String question) {}
+    public record ChatRequest(String question, String conversationId) {}
 
     public record ChatResponse(String answer) {}
 }

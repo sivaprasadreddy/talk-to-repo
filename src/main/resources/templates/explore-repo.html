@@ -145,6 +145,16 @@
         const repoId = /*[[${repo.id}]]*/ null;
         let chatLocked = false;
 
+        function getConversationId() {
+            const key = 'conversationId_' + repoId;
+            let id = sessionStorage.getItem(key);
+            if (!id) {
+                id = crypto.randomUUID();
+                sessionStorage.setItem(key, id);
+            }
+            return id;
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(text));
@@ -218,7 +228,7 @@
                 const resp = await fetch('/repos/' + repoId + '/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({question: question})
+                    body: JSON.stringify({question: question, conversationId: getConversationId()})
                 });
                 const data = await resp.json();
                 document.getElementById('chat-loading').remove();
