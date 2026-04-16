@@ -21,7 +21,8 @@
                 <form th:action="@{/repos/{id}/reingest(id=${repo.id})}" method="post" class="inline">
                     <button type="submit"
                             class="inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500">
-                        <i class="fas fa-redo mr-2"></i> Re-ingest
+                        <i class="fas fa-redo mr-2"></i>
+                        <span th:text="${repo.ingestedAt != null} ? 'Re-ingest' : 'Ingest'">Ingest</span>
                     </button>
                 </form>
                 <form th:action="@{/repos/{id}/generate-readme(id=${repo.id})}" method="post" class="inline">
