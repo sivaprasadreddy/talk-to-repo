@@ -34,3 +34,16 @@ Talk To Repo is an AI-powered Spring Boot application that clones source code re
 # Run with Testcontainers instead of Docker Compose (dev mode)
 ./mvnw spring-boot:test-run -Dspring-boot.run.main-class=dev.sivalabs.ttr.TestTalkToRepoApplication
 ```
+
+## Project Context
+
+Read `docs/project.md` for mission, tech stack, and architecture before making any decisions.
+
+## SDD (Spec Driven Development) Workflow
+This project uses Spec Driven Development. The workflow is:
+1. `/sdd-analyse <feature description>` → produces `feature.md`
+2. `/sdd-plan` → reads `feature.md`, produces `plan.md`
+3. `/sdd-implement` → reads `plan.md`, implements and verifies
+4. `/sdd-archive` → archives `feature.md` + `plan.md` to `docs/<feature-name>/`
+
+Never skip steps. Always read `docs/project.md` before planning or implementing.
