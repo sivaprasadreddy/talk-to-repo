@@ -13,7 +13,10 @@ An AI-powered Spring Boot application that clones source code repositories (GitH
 ## Tech Stack
 
 - **Java 25** / **Spring Boot 4.0.5**
-- **Spring AI 2.0.0-M4** — OpenAI chat (`gpt-5`) and embedding (`text-embedding-3-small`) models, pgvector store, JDBC chat memory
+- **Spring AI 2.0.0-M4**:
+  - Ollama chat (`qwen3-coder`) and embedding (`nomic-embed-text-v2-moe:latest`) models, 
+  - OpenAI chat (`gpt-5`) and embedding (`text-embedding-3-small`) models, 
+  - Pgvector store, JDBC chat memory
 - **PostgreSQL + pgvector** — persistence and vector similarity search (HNSW / cosine distance)
 - **JGit 7.6** — programmatic git clone and pull
 - **Flyway** — database migrations
@@ -24,9 +27,22 @@ An AI-powered Spring Boot application that clones source code repositories (GitH
 
 - Java 25+
 - Docker (for PostgreSQL + pgvector via Docker Compose)
-- OpenAI API key
+- Ollama or OpenAI API key
 
-## Getting Started
+## Using Ollama (default)
+
+Install [Ollama](https://ollama.com) and pull the `qwen3-coder:latest`, `nomic-embed-text-v2-moe:latest` models
+
+```shell
+ollama pull qwen3-coder:latest
+ollama pull nomic-embed-text-v2-moe:latest
+```
+
+> [!NOTE]  
+> The qwen3-coder:latest model is around 18GB. 
+> If you want to use a smaller model like `qwen3:latest` or `gemma4:latest`, pull those models and update the property `spring.ai.ollama.chat.model` in application.properties accordingly.
+
+## Using OpenAI (Enable openai profile)
 
 1. **Set your OpenAI API key:**
 
@@ -41,6 +57,10 @@ An AI-powered Spring Boot application that clones source code repositories (GitH
    ```
 
 3. Open `http://localhost:8080` in your browser.
+
+> [!IMPORTANT]  
+> The embedding models nomic-embed-text-v2-moe and text-embedding-3-small do not support the same dimension.
+> So, if you want to switch from Ollama to OpenAI or vice versa, you should delete the Pgvector database and recreate.
 
 ## Usage
 
