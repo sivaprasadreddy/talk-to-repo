@@ -27,33 +27,40 @@ An AI-powered Spring Boot application that clones source code repositories (GitH
 
 - Java 25+
 - Docker (for PostgreSQL + pgvector via Docker Compose)
-- Ollama or OpenAI API key
+- Ollama or Docker Model Runner (DMR) or OpenAI API key
 
 ## Using Ollama (default)
 
 Install [Ollama](https://ollama.com) and pull the `qwen3-coder:latest`, `nomic-embed-text-v2-moe:latest` models
 
 ```shell
-ollama pull qwen3-coder:latest
-ollama pull nomic-embed-text-v2-moe:latest
+$ ollama pull qwen3-coder:latest
+$ ollama pull nomic-embed-text-v2-moe:latest
 ```
 
 > [!NOTE]  
 > The qwen3-coder:latest model is around 18GB. 
 > If you want to use a smaller model like `qwen3:latest` or `gemma4:latest`, pull those models and update the property `spring.ai.ollama.chat.model` in application.properties accordingly.
 
+## Using Docker Model Runner (Enable dmr profile)
+
+From Docker Desktop -> Models -> Docker Hub, pull the `gemma4:E2B`, `embeddinggemma:latest` models
+
+```bash
+$ SPRING_PROFILES_ACTIVE=dmr ./mvnw spring-boot:run
+```
 ## Using OpenAI (Enable openai profile)
 
 1. **Set your OpenAI API key:**
 
    ```bash
-   export OPENAI_API_KEY=sk-...
+   $ export OPENAI_API_KEY=sk-...
    ```
 
 2. **Run the application** (Docker Compose starts PostgreSQL automatically):
 
    ```bash
-   ./mvnw spring-boot:run
+   $ SPRING_PROFILES_ACTIVE=openapi ./mvnw spring-boot:run
    ```
 
 3. Open `http://localhost:8080` in your browser.
