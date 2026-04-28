@@ -44,7 +44,7 @@ $ ollama pull nomic-embed-text-v2-moe:latest
 
 ## Using Docker Model Runner (Enable dmr profile)
 
-From Docker Desktop -> Models -> Docker Hub, pull the `gemma4:E2B`, `embeddinggemma:latest` models
+From Docker Desktop -> Models -> Docker Hub, pull the `gemma4:E2B`, `nomic-embed-text-v2-moe:latest` models
 
 ```bash
 $ SPRING_PROFILES_ACTIVE=dmr ./mvnw spring-boot:run
